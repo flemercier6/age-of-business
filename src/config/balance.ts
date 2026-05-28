@@ -44,18 +44,16 @@ export const BALANCE = {
     maxPayments: 10,
   },
 
-  /** Employés (cofounders — salaire de base). */
+  /** Employés (cofounders — coût uniquement à l'achat, aucun salaire récurrent). */
   employee: {
-    /** Salaire payé par cofounder par seconde. */
-    salaryPerSec: 9,
+    salaryPerSec: 0,
   },
 
   /**
-   * Paie : les salaires sont versés en une seule pulsation périodique,
-   * pas en flux continu — le joueur voit le montant arriver d'un coup.
+   * Paie : cycle conservé mais avec salaires à 0 — la mécanique reste en place
+   * si on veut réintroduire des salaires plus tard.
    */
   payroll: {
-    /** Période entre deux versements de salaires (secondes). */
     cycleSec: 30,
   },
 
@@ -67,14 +65,14 @@ export const BALANCE = {
     stagiaire: {
       cashCost: 150,
       brandCost: 0,
-      salaryPerSec: 5,
+      salaryPerSec: 0,
       /** La zone produit à demi-vitesse. */
       productionMultiplier: 0.5,
     },
     manager: {
       cashCost: 400,
       brandCost: 0,
-      salaryPerSec: 12,
+      salaryPerSec: 0,
       /** Production nominale. */
       productionMultiplier: 1.0,
     },
@@ -82,7 +80,7 @@ export const BALANCE = {
       cashCost: 900,
       /** Coût additionnel en BRAND (réputation nécessaire pour attirer le talent). */
       brandCost: 15,
-      salaryPerSec: 20,
+      salaryPerSec: 0,
       /** La zone produit au double du rythme nominal. */
       productionMultiplier: 2.0,
     },
@@ -144,9 +142,9 @@ export const BALANCE = {
   offices: {
     garage: {
       rows: 2,
-      cols: 2,
+      cols: 3,
       /** Plafond de population (nombre max d'employés). */
-      populationCap: 4,
+      populationCap: 6,
     },
     office: {
       rows: 5,

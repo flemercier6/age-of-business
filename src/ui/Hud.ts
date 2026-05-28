@@ -194,7 +194,7 @@ export class Hud {
     this.overlayEl.innerHTML = `
       <div class="modal">
         <h2>${zoneLabel} · ${profileLabel}</h2>
-        <p>Production ×${mult} · Salaire ${occupant.salaryPerSec} $/s</p>
+        <p>Production ×${mult}${occupant.salaryPerSec > 0 ? ` · Salaire ${occupant.salaryPerSec} $/s` : ''}</p>
         <div class="options">
           <button id="zone-free">Libérer l'employé → banc</button>
           <button id="zone-cancel">Annuler</button>
@@ -288,11 +288,16 @@ export class Hud {
       this.statusEl.style.color = 'var(--bad)';
     } else if (s.clients.length > 0) {
       const nextPay = Math.ceil(secondsToNextPayment(s, b));
-      const nextSal = Math.ceil(secondsToNextPayroll(s, b));
       const salaryTotal = s.employees.reduce((sum, e) => sum + e.salaryPerSec, 0) * b.payroll.cycleSec;
-      if (nextSal <= nextPay) {
-        this.statusEl.textContent = `Paie dans ${nextSal}s (−${salaryTotal} $) · Clients dans ${nextPay}s (+${s.clients.length * b.revenue.cashPerPayment} $)`;
-        this.statusEl.style.color = salaryTotal > s.resources.cash ? 'var(--bad)' : 'var(--warn)';
+      if (salaryTotal > 0) {
+        const nextSal = Math.ceil(secondsToNextPayroll(s, b));
+        if (nextSal <= nextPay) {
+          this.statusEl.textContent = `Paie dans ${nextSal}s (−${salaryTotal} $) · Clients dans ${nextPay}s (+${s.clients.length * b.revenue.cashPerPayment} $)`;
+          this.statusEl.style.color = salaryTotal > s.resources.cash ? 'var(--bad)' : 'var(--warn)';
+        } else {
+          this.statusEl.textContent = `Prochain versement clients dans ${nextPay}s (+${s.clients.length * b.revenue.cashPerPayment} $)`;
+          this.statusEl.style.color = 'var(--good)';
+        }
       } else {
         this.statusEl.textContent = `Prochain versement clients dans ${nextPay}s (+${s.clients.length * b.revenue.cashPerPayment} $)`;
         this.statusEl.style.color = 'var(--good)';
