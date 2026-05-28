@@ -78,12 +78,15 @@ html, body {
 #game canvas { border-radius: 10px; display: block; }
 
 #overlay {
+  display: none;
   position: absolute;
   inset: 0;
   pointer-events: none;
-  display: flex;
   align-items: center;
   justify-content: center;
+}
+#overlay.active {
+  display: flex;
 }
 .modal {
   pointer-events: auto;

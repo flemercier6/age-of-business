@@ -36,6 +36,12 @@ export class InputController {
   }
 
   private onPointer(x: number, y: number): void {
+    // Menu ouvert : un clic sur le canvas le ferme sans autre action.
+    if (this.hud.isMenuOpen()) {
+      this.hud.closeOverlay();
+      return;
+    }
+
     // Pause = observation : aucun ordre, aucune sélection.
     if (this.state.paused || this.state.gameOver) {
       this.selectedEmployeeId = null;

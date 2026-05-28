@@ -82,6 +82,10 @@ export class Hud {
     this.flashUntil = performance.now() + 2500;
   }
 
+  isMenuOpen(): boolean {
+    return this.overlayEl.classList.contains('active');
+  }
+
   openBuildMenu(pos: GridPos): void {
     if (this.gameOverShown) return;
     this.buildPos = pos;
@@ -107,6 +111,7 @@ export class Hud {
       });
     });
     document.getElementById('build-cancel')?.addEventListener('click', () => this.closeOverlay());
+    this.overlayEl.classList.add('active');
   }
 
   private buildOption(zone: ZoneType, label: string, cost: number): string {
@@ -179,6 +184,7 @@ export class Hud {
       });
     });
     document.getElementById('zone-cancel')?.addEventListener('click', () => this.closeOverlay());
+    this.overlayEl.classList.add('active');
   }
 
   private renderOccupiedZoneMenu(zone: Zone, occupant: Employee, zoneLabel: string): void {
@@ -199,6 +205,7 @@ export class Hud {
       this.closeOverlay();
     });
     document.getElementById('zone-cancel')?.addEventListener('click', () => this.closeOverlay());
+    this.overlayEl.classList.add('active');
   }
 
   closeBuildMenu(): void {
@@ -210,6 +217,7 @@ export class Hud {
     this.zoneMenuZoneId = null;
     this.buildPos = null;
     this.overlayEl.innerHTML = '';
+    this.overlayEl.classList.remove('active');
   }
 
   sync(s: GameState): void {
@@ -301,6 +309,7 @@ export class Hud {
       </div>
     `;
     document.getElementById('restart')?.addEventListener('click', () => location.reload());
+    this.overlayEl.classList.add('active');
   }
 
   private zoneTypeLabel(type: ZoneType): string {
