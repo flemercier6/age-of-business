@@ -7,6 +7,7 @@ import type { GridPos } from '../core/types';
 import type { Hud } from '../ui/Hud';
 import type { EmployeeRenderer } from './EmployeeRenderer';
 import type { Projection } from './projection/Projection';
+import { CANVAS } from './theme';
 
 /**
  * Traduit les entrées (clics canvas, ESPACE) en intentions, puis en Command.
@@ -36,16 +37,23 @@ export class InputController {
   }
 
   private onPointer(x: number, y: number): void {
-    // Menu ouvert : un clic sur le canvas le ferme sans autre action.
+    // Phaser écoute les events au niveau window : ignorer tout clic hors canvas
+    // (ex. boutons HTML du footer qui déclenchent un pointerdown window-level).
+    if (x < 0 || x > CANVAS.width || y < 0 || y > CANVAS.height) return;
+
+    // Game over : le canvas est inactif — seul le bouton "Rejouer" (HTML) répond.
+    // Ne pas fermer l'overlay pour que le modal reste visible.
+    if (this.state.gameOver) return;
+
+    // Menu ouvert : un clic canvas le ferme sans autre action.
     if (this.hud.isMenuOpen()) {
       this.hud.closeOverlay();
       return;
     }
 
-    // Pause = observation : aucun ordre, aucune sélection.
-    if (this.state.paused || this.state.gameOver) {
+    // Pause = observation seule.
+    if (this.state.paused) {
       this.selectedEmployeeId = null;
-      this.hud.closeBuildMenu();
       return;
     }
 
@@ -61,7 +69,6 @@ export class InputController {
     const hit = this.employees.benchHitTest(x, y);
     if (hit?.kind === 'employee') {
       this.selectedEmployeeId = hit.id;
-      this.hud.closeBuildMenu();
       return;
     }
     if (hit?.kind === 'bench') {
@@ -73,13 +80,11 @@ export class InputController {
         }
       }
       this.selectedEmployeeId = null;
-      this.hud.closeBuildMenu();
       return;
     }
 
-    // Clic ailleurs : on annule la sélection / ferme le menu.
+    // Clic ailleurs : on annule la sélection.
     this.selectedEmployeeId = null;
-    this.hud.closeBuildMenu();
   }
 
   private handleGridClick(pos: GridPos): void {
@@ -90,14 +95,12 @@ export class InputController {
       // Un employé est sélectionné : clic sur une zone => assignation.
       if (zone) this.dispatch({ kind: 'assign', employeeId: this.selectedEmployeeId, pos });
       this.selectedEmployeeId = null;
-      this.hud.closeBuildMenu();
       return;
     }
 
     if (occupant) {
       // Sélectionne l'employé présent sur la case.
       this.selectedEmployeeId = occupant.id;
-      this.hud.closeBuildMenu();
       return;
     }
 
