@@ -43,7 +43,7 @@ export function createInitialState(balance: Balance): GameState {
   const employees: Employee[] = [];
   for (let i = 0; i < balance.start.cofounders; i++) {
     // Les employés de départ sont des cofounders (couleur distinctive).
-    employees.push(createEmployee(i + 1, balance.employee.salaryPerSec, true));
+    employees.push(createEmployee(i + 1, balance.employee.salaryPerSec, true, 1.0, 'cofounder'));
   }
 
   const startZone = createZone(

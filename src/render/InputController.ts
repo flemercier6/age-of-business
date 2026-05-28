@@ -96,8 +96,11 @@ export class InputController {
     }
 
     if (zone) {
-      // Zone sans employé : rien à faire pour l'instant.
-      this.hud.closeBuildMenu();
+      // Zone avec ou sans occupant → menu de recrutement / gestion.
+      const occupant = zone.assignedEmployeeId !== null
+        ? this.state.employees.find((e) => e.id === zone.assignedEmployeeId)
+        : undefined;
+      this.hud.openZoneMenu(zone, occupant);
       return;
     }
 

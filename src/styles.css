@@ -139,3 +139,23 @@ button .cost { color: var(--muted); float: right; }
 }
 
 .gameover h2 { color: var(--bad); }
+
+/* ---- Profile recruitment buttons ---- */
+.profile-stagiaire { border-left: 4px solid var(--muted); }
+.profile-manager   { border-left: 4px solid var(--accent); }
+.profile-headof    { border-left: 4px solid #cba6f7; }
+
+.profile-mult {
+  color: var(--warn);
+  font-size: 12px;
+  font-weight: 700;
+  float: right;
+  margin-top: 2px;
+}
+
+.warn-inline {
+  color: var(--warn);
+  font-size: 12px;
+  margin: 0;
+  text-align: center;
+}

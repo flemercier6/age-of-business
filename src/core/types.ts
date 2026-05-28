@@ -13,6 +13,9 @@ export interface GridPos {
 /** Les 3 types de zones de département de la V1. */
 export type ZoneType = 'engineering' | 'marketing' | 'sales';
 
+/** Profil d'un employé recruté (détermine coût, salaire et multiplicateur de production). */
+export type EmployeeProfile = 'stagiaire' | 'manager' | 'headOf';
+
 /** Niveaux de bureau de la V1. */
 export type OfficeLevel = 'garage' | 'office';
 

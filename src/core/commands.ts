@@ -3,7 +3,7 @@ import { createEmployee } from './employee';
 import type { GameState } from './gamestate';
 import { inBounds } from './office';
 import { population, zoneAt } from './selectors';
-import type { GridPos, ZoneType } from './types';
+import type { EmployeeProfile, GridPos, ZoneType } from './types';
 import { createZone } from './zone';
 
 /**
@@ -15,7 +15,7 @@ export type Command =
   | { kind: 'buildZone'; pos: GridPos; zoneType: ZoneType }
   | { kind: 'assign'; employeeId: number; pos: GridPos }
   | { kind: 'unassign'; employeeId: number }
-  | { kind: 'recruit' }
+  | { kind: 'recruit'; profile: EmployeeProfile; zoneId: number }
   | { kind: 'launchMvp' }
   | { kind: 'relocate' };
 
@@ -39,7 +39,7 @@ export function applyCommand(s: GameState, cmd: Command, b: Balance): CommandRes
     case 'unassign':
       return unassign(s, cmd.employeeId);
     case 'recruit':
-      return recruit(s, b);
+      return recruit(s, cmd.profile, cmd.zoneId, b);
     case 'launchMvp':
       return launchMvp(s, b);
     case 'relocate':
@@ -85,11 +85,26 @@ function unassign(s: GameState, employeeId: number): CommandResult {
   return ok();
 }
 
-function recruit(s: GameState, b: Balance): CommandResult {
+function recruit(s: GameState, profile: EmployeeProfile, zoneId: number, b: Balance): CommandResult {
   if (population(s) >= s.office.populationCap) return fail('Plafond de population atteint');
-  if (s.resources.cash < b.employee.recruitCost) return fail('CASH insuffisant');
-  s.resources.cash -= b.employee.recruitCost;
-  s.employees.push(createEmployee(s.nextEmployeeId++, b.employee.salaryPerSec));
+
+  const zone = s.zones.find((z) => z.id === zoneId);
+  if (!zone) return fail('Zone introuvable');
+  if (zone.assignedEmployeeId !== null) return fail('Zone déjà occupée');
+
+  const cfg = b.profiles[profile];
+  if (s.resources.cash < cfg.cashCost) return fail('CASH insuffisant');
+  if (s.resources.brand < cfg.brandCost) return fail('BRAND insuffisante');
+
+  s.resources.cash -= cfg.cashCost;
+  s.resources.brand -= cfg.brandCost;
+
+  const emp = createEmployee(s.nextEmployeeId++, cfg.salaryPerSec, false, cfg.productionMultiplier, profile);
+  s.employees.push(emp);
+
+  emp.assignedZoneId = zone.id;
+  zone.assignedEmployeeId = emp.id;
+
   return ok();
 }
 

@@ -1,5 +1,6 @@
 import type { Balance } from '../config/balance';
 import type { Command } from '../core/commands';
+import type { Employee } from '../core/employee';
 import type { GameState } from '../core/gamestate';
 import {
   burnRate,
@@ -10,7 +11,8 @@ import {
   revenuePerSec,
   secondsToNextPayment,
 } from '../core/selectors';
-import type { GridPos, ZoneType } from '../core/types';
+import type { EmployeeProfile, GridPos, ZoneType } from '../core/types';
+import type { Zone } from '../core/zone';
 
 /**
  * HUD en overlay HTML/DOM (au-dessus du canvas Phaser).
@@ -21,16 +23,19 @@ export class Hud {
   private statusEl: HTMLElement;
   private overlayEl: HTMLElement;
 
-  private btnRecruit!: HTMLButtonElement;
   private btnMvp!: HTMLButtonElement;
   private btnRelocate!: HTMLButtonElement;
 
   private buildPos: GridPos | null = null;
   private buildMenuOpen = false;
+  private zoneMenuZoneId: number | null = null;
   private gameOverShown = false;
 
   private flashMsg = '';
   private flashUntil = 0;
+
+  /** Dernier état synchronisé — utilisé par les menus pour vérifier l'affordabilité. */
+  private lastState: GameState | null = null;
 
   constructor(
     private dispatch: (cmd: Command) => void,
@@ -57,16 +62,13 @@ export class Hud {
     `;
 
     controls.innerHTML = `
-      <button id="btn-recruit"></button>
       <button id="btn-mvp"></button>
       <button id="btn-relocate"></button>
-      <span class="hint">ESPACE = pause · clic employé puis zone = assigner · clic banc = libérer</span>
+      <span class="hint">ESPACE = pause · clic département = recruter · clic employé puis zone = réassigner</span>
     `;
-    this.btnRecruit = document.getElementById('btn-recruit') as HTMLButtonElement;
     this.btnMvp = document.getElementById('btn-mvp') as HTMLButtonElement;
     this.btnRelocate = document.getElementById('btn-relocate') as HTMLButtonElement;
 
-    this.btnRecruit.addEventListener('click', () => this.dispatch({ kind: 'recruit' }));
     this.btnMvp.addEventListener('click', () => this.dispatch({ kind: 'launchMvp' }));
     this.btnRelocate.addEventListener('click', () => this.dispatch({ kind: 'relocate' }));
   }
@@ -101,10 +103,10 @@ export class Hud {
       btn.addEventListener('click', () => {
         const zoneType = btn.dataset.zone as ZoneType;
         if (this.buildPos) this.dispatch({ kind: 'buildZone', pos: this.buildPos, zoneType });
-        this.closeBuildMenu();
+        this.closeOverlay();
       });
     });
-    document.getElementById('build-cancel')?.addEventListener('click', () => this.closeBuildMenu());
+    document.getElementById('build-cancel')?.addEventListener('click', () => this.closeOverlay());
   }
 
   private buildOption(zone: ZoneType, label: string, cost: number): string {
@@ -112,14 +114,106 @@ export class Hud {
     return `<button class="${cls}" data-zone="${zone}">${label}<span class="cost">${cost} $</span></button>`;
   }
 
+  /** Ouvre le menu de recrutement / gestion d'une zone cliquée. */
+  openZoneMenu(zone: Zone, occupant: Employee | undefined): void {
+    if (this.gameOverShown) return;
+    this.zoneMenuZoneId = zone.id;
+    const s = this.lastState;
+    const b = this.balance;
+    const zoneLabel = this.zoneTypeLabel(zone.type);
+
+    if (occupant) {
+      this.renderOccupiedZoneMenu(zone, occupant, zoneLabel);
+    } else {
+      this.renderRecruitMenu(zone, zoneLabel, s, b);
+    }
+  }
+
+  private renderRecruitMenu(zone: Zone, zoneLabel: string, s: GameState | null, b: Balance): void {
+    const popFull = s ? population(s) >= s.office.populationCap : false;
+    const cash = s?.resources.cash ?? 0;
+    const brand = s?.resources.brand ?? 0;
+
+    const p = b.profiles;
+
+    const stagiaireCantAfford = cash < p.stagiaire.cashCost;
+    const managerCantAfford = cash < p.manager.cashCost;
+    const headOfCantAfford = cash < p.headOf.cashCost || brand < p.headOf.brandCost;
+
+    this.overlayEl.innerHTML = `
+      <div class="modal">
+        <h2>${zoneLabel} · Recruter</h2>
+        <p>Zone vide — choisissez un profil :</p>
+        <div class="options">
+          <button class="profile-stagiaire" data-profile="stagiaire"
+            ${popFull || stagiaireCantAfford ? 'disabled' : ''}>
+            <strong>Stagiaire</strong> <span class="profile-mult">×0.5</span>
+            <br><small>Production à demi-vitesse</small>
+            <span class="cost">${p.stagiaire.cashCost} $</span>
+          </button>
+          <button class="profile-manager" data-profile="manager"
+            ${popFull || managerCantAfford ? 'disabled' : ''}>
+            <strong>Manager</strong> <span class="profile-mult">×1.0</span>
+            <br><small>Production nominale</small>
+            <span class="cost">${p.manager.cashCost} $</span>
+          </button>
+          <button class="profile-headof" data-profile="headOf"
+            ${popFull || headOfCantAfford ? 'disabled' : ''}>
+            <strong>Head of</strong> <span class="profile-mult">×2.0</span>
+            <br><small>Double production — requiert de la BRAND</small>
+            <span class="cost">${p.headOf.cashCost} $ + ${p.headOf.brandCost} ◆</span>
+          </button>
+          ${popFull ? '<p class="warn-inline">Plafond de population atteint</p>' : ''}
+          <button id="zone-cancel">Annuler</button>
+        </div>
+      </div>
+    `;
+
+    this.overlayEl.querySelectorAll<HTMLButtonElement>('button[data-profile]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const profile = btn.dataset.profile as EmployeeProfile;
+        if (this.zoneMenuZoneId !== null) {
+          this.dispatch({ kind: 'recruit', profile, zoneId: this.zoneMenuZoneId });
+        }
+        this.closeOverlay();
+      });
+    });
+    document.getElementById('zone-cancel')?.addEventListener('click', () => this.closeOverlay());
+  }
+
+  private renderOccupiedZoneMenu(zone: Zone, occupant: Employee, zoneLabel: string): void {
+    const profileLabel = this.profileLabel(occupant.profile);
+    const mult = occupant.productionMultiplier;
+    this.overlayEl.innerHTML = `
+      <div class="modal">
+        <h2>${zoneLabel} · ${profileLabel}</h2>
+        <p>Production ×${mult} · Salaire ${occupant.salaryPerSec} $/s</p>
+        <div class="options">
+          <button id="zone-free">Libérer l'employé → banc</button>
+          <button id="zone-cancel">Annuler</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('zone-free')?.addEventListener('click', () => {
+      this.dispatch({ kind: 'unassign', employeeId: occupant.id });
+      this.closeOverlay();
+    });
+    document.getElementById('zone-cancel')?.addEventListener('click', () => this.closeOverlay());
+  }
+
   closeBuildMenu(): void {
-    if (!this.buildMenuOpen) return;
+    this.closeOverlay();
+  }
+
+  closeOverlay(): void {
     this.buildMenuOpen = false;
+    this.zoneMenuZoneId = null;
     this.buildPos = null;
     this.overlayEl.innerHTML = '';
   }
 
   sync(s: GameState): void {
+    this.lastState = s;
     const b = this.balance;
     const net = netCashPerSec(s, b);
     const rev = revenuePerSec(s, b);
@@ -160,11 +254,6 @@ export class Hud {
     // Boutons.
     const blocked = s.paused || s.gameOver;
 
-    this.btnRecruit.textContent = '';
-    this.btnRecruit.innerHTML = `Recruter <span class="cost">${b.employee.recruitCost} $</span>`;
-    this.btnRecruit.disabled =
-      blocked || pop >= s.office.populationCap || s.resources.cash < b.employee.recruitCost;
-
     if (s.flags.mvpLaunched) {
       this.btnMvp.innerHTML = 'MVP lancé ✓';
       this.btnMvp.disabled = true;
@@ -201,7 +290,7 @@ export class Hud {
 
   private showGameOver(s: GameState): void {
     this.gameOverShown = true;
-    this.buildMenuOpen = false;
+    this.closeOverlay();
     this.overlayEl.innerHTML = `
       <div class="modal gameover">
         <h2>${s.gameOverReason ?? 'Game over'}</h2>
@@ -212,6 +301,20 @@ export class Hud {
       </div>
     `;
     document.getElementById('restart')?.addEventListener('click', () => location.reload());
+  }
+
+  private zoneTypeLabel(type: ZoneType): string {
+    return type === 'engineering' ? 'Engineering' : type === 'marketing' ? 'Marketing' : 'Sales';
+  }
+
+  private profileLabel(profile: EmployeeProfile | 'cofounder'): string {
+    const labels: Record<string, string> = {
+      cofounder: 'Cofounder',
+      stagiaire: 'Stagiaire',
+      manager: 'Manager',
+      headOf: 'Head of',
+    };
+    return labels[profile] ?? profile;
   }
 
   private value(id: string): HTMLElement {

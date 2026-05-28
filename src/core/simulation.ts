@@ -18,14 +18,17 @@ export function tick(s: GameState, dt: number, b: Balance): void {
   for (const zone of s.zones) {
     if (zone.assignedEmployeeId === null) continue;
 
+    const emp = s.employees.find((e) => e.id === zone.assignedEmployeeId);
+    const prodMult = emp?.productionMultiplier ?? 1;
+
     switch (zone.type) {
       case 'engineering': {
-        r.tech += b.zones.engineering.techPerSec * dt;
+        r.tech += b.zones.engineering.techPerSec * prodMult * dt;
         break;
       }
       case 'marketing': {
         r.cash -= b.zones.marketing.cashCostPerSec * dt;
-        r.brand = Math.min(b.brand.max, r.brand + b.zones.marketing.brandPerSec * dt);
+        r.brand = Math.min(b.brand.max, r.brand + b.zones.marketing.brandPerSec * prodMult * dt);
         marketingActive = true;
         break;
       }
@@ -38,7 +41,7 @@ export function tick(s: GameState, dt: number, b: Balance): void {
           multiplier = 1 + r.brand * b.zones.sales.brandMultiplierPerBrand;
           r.brand = Math.max(0, r.brand - b.zones.sales.brandConsumedPerSec * dt);
         }
-        clientAccrualThisTick += b.zones.sales.baseClientsPerSec * multiplier * dt;
+        clientAccrualThisTick += b.zones.sales.baseClientsPerSec * prodMult * multiplier * dt;
         break;
       }
     }

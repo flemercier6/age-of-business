@@ -44,13 +44,39 @@ export const BALANCE = {
     maxPayments: 10,
   },
 
-  /** Employés (cofounders et recrues — tous polyvalents en V1). */
+  /** Employés (cofounders — salaire de base). */
   employee: {
-    /** Salaire payé par employé et par seconde (alimente le burn rate).
-     *  S'applique que l'employé soit assigné ou non. */
+    /** Salaire payé par cofounder par seconde. */
     salaryPerSec: 9,
-    /** Coût CASH pour recruter un nouvel employé. */
-    recruitCost: 600,
+  },
+
+  /**
+   * Profils de recrutement disponibles depuis les départements.
+   * Chaque recrue est directement assignée à la zone depuis laquelle on recrute.
+   */
+  profiles: {
+    stagiaire: {
+      cashCost: 150,
+      brandCost: 0,
+      salaryPerSec: 5,
+      /** La zone produit à demi-vitesse. */
+      productionMultiplier: 0.5,
+    },
+    manager: {
+      cashCost: 400,
+      brandCost: 0,
+      salaryPerSec: 12,
+      /** Production nominale. */
+      productionMultiplier: 1.0,
+    },
+    headOf: {
+      cashCost: 900,
+      /** Coût additionnel en BRAND (réputation nécessaire pour attirer le talent). */
+      brandCost: 15,
+      salaryPerSec: 20,
+      /** La zone produit au double du rythme nominal. */
+      productionMultiplier: 2.0,
+    },
   },
 
   /** Zones de département (1 case = 1 zone = 1 employé max). */
