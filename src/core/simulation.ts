@@ -75,9 +75,13 @@ export function tick(s: GameState, dt: number, b: Balance): void {
     s.clients = s.clients.filter((c) => c.paymentsRemaining > 0);
   }
 
-  // 5) Salaires (flux continu de sortie). Le revenu, lui, est pulsé (étape 4).
-  const salaries = s.employees.reduce((sum, e) => sum + e.salaryPerSec, 0);
-  r.cash -= salaries * dt;
+  // 5) Salaires (pulsés toutes les payroll.cycleSec, comme les versements clients).
+  s.payrollTimerSec += dt;
+  while (s.payrollTimerSec >= b.payroll.cycleSec) {
+    s.payrollTimerSec -= b.payroll.cycleSec;
+    const salaries = s.employees.reduce((sum, e) => sum + e.salaryPerSec, 0);
+    r.cash -= salaries * b.payroll.cycleSec;
+  }
 
   // 6) Timer de survie.
   s.elapsedSec += dt;

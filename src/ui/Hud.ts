@@ -10,6 +10,7 @@ import {
   population,
   revenuePerSec,
   secondsToNextPayment,
+  secondsToNextPayroll,
 } from '../core/selectors';
 import type { EmployeeProfile, GridPos, ZoneType } from '../core/types';
 import type { Zone } from '../core/zone';
@@ -286,9 +287,16 @@ export class Hud {
       this.statusEl.textContent = `⚠ ${this.flashMsg}`;
       this.statusEl.style.color = 'var(--bad)';
     } else if (s.clients.length > 0) {
-      const next = Math.ceil(secondsToNextPayment(s, b));
-      this.statusEl.textContent = `Prochain versement clients dans ${next}s (+${s.clients.length * b.revenue.cashPerPayment} $)`;
-      this.statusEl.style.color = 'var(--good)';
+      const nextPay = Math.ceil(secondsToNextPayment(s, b));
+      const nextSal = Math.ceil(secondsToNextPayroll(s, b));
+      const salaryTotal = s.employees.reduce((sum, e) => sum + e.salaryPerSec, 0) * b.payroll.cycleSec;
+      if (nextSal <= nextPay) {
+        this.statusEl.textContent = `Paie dans ${nextSal}s (−${salaryTotal} $) · Clients dans ${nextPay}s (+${s.clients.length * b.revenue.cashPerPayment} $)`;
+        this.statusEl.style.color = salaryTotal > s.resources.cash ? 'var(--bad)' : 'var(--warn)';
+      } else {
+        this.statusEl.textContent = `Prochain versement clients dans ${nextPay}s (+${s.clients.length * b.revenue.cashPerPayment} $)`;
+        this.statusEl.style.color = 'var(--good)';
+      }
     } else {
       this.statusEl.textContent = '';
     }

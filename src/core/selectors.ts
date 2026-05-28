@@ -34,6 +34,11 @@ export function secondsToNextPayment(s: GameState, b: Balance): number {
   return Math.max(0, b.revenue.billingCycleSec - s.billingTimerSec);
 }
 
+/** Secondes restantes avant la prochaine pulsation de paie. */
+export function secondsToNextPayroll(s: GameState, b: Balance): number {
+  return Math.max(0, b.payroll.cycleSec - s.payrollTimerSec);
+}
+
 /** Variation nette de CASH/sec moyenne (revenu - salaires - coût marketing). */
 export function netCashPerSec(s: GameState, b: Balance): number {
   return revenuePerSec(s, b) - burnRate(s) - marketingCashCostPerSec(s, b);

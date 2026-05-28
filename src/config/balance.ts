@@ -51,6 +51,15 @@ export const BALANCE = {
   },
 
   /**
+   * Paie : les salaires sont versés en une seule pulsation périodique,
+   * pas en flux continu — le joueur voit le montant arriver d'un coup.
+   */
+  payroll: {
+    /** Période entre deux versements de salaires (secondes). */
+    cycleSec: 30,
+  },
+
+  /**
    * Profils de recrutement disponibles depuis les départements.
    * Chaque recrue est directement assignée à la zone depuis laquelle on recrute.
    */

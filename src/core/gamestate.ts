@@ -25,6 +25,8 @@ export interface GameState {
   clientAccrual: number;
   /** Temps écoulé dans le cycle de facturation courant (secondes). */
   billingTimerSec: number;
+  /** Temps écoulé depuis la dernière pulsation de paie (secondes). */
+  payrollTimerSec: number;
   /** Temps de survie écoulé (secondes). */
   elapsedSec: number;
   /** Pause d'observation : la simulation s'arrête, aucun ordre accepté. */
@@ -61,6 +63,7 @@ export function createInitialState(balance: Balance): GameState {
     flags: { mvpLaunched: false },
     clientAccrual: 0,
     billingTimerSec: 0,
+    payrollTimerSec: 0,
     elapsedSec: 0,
     paused: false,
     gameOver: false,
