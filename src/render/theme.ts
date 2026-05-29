@@ -5,20 +5,28 @@ import type { ZoneType } from '../core/types';
  * Volontairement séparées de balance.ts : ici rien n'influe sur le gameplay.
  */
 
-export const CANVAS = { width: 760, height: 760 };
+/** Taille du canvas en px — s'adapte à la largeur du viewport. */
+const canvasSize =
+  typeof window !== 'undefined'
+    ? Math.min(760, Math.max(288, window.innerWidth - 16))
+    : 760;
+
+export const CANVAS = { width: canvasSize, height: canvasSize };
+
+const r = canvasSize / 760;
 
 export const LAYOUT = {
   /** Marge autour de la grille (px). */
-  margin: 36,
+  margin: Math.max(12, Math.round(36 * r)),
   /** Taille maximale d'une case (px) pour éviter une grille géante au Garage. */
-  maxTile: 150,
+  maxTile: Math.max(40, Math.round(150 * r)),
   /** Hauteur réservée en bas du canvas pour le "banc" des employés libres. */
-  benchHeight: 130,
+  benchHeight: Math.max(70, Math.round(130 * r)),
   /** Espace entre le bas de la grille et le banc. */
-  benchTop: 26,
+  benchTop: Math.max(6, Math.round(26 * r)),
   /** Diamètre nominal d'un emplacement du banc. */
-  benchSlot: 50,
-  benchGap: 16,
+  benchSlot: Math.max(24, Math.round(50 * r)),
+  benchGap: Math.max(2, Math.round(16 * r)),
 };
 
 export const COLORS = {

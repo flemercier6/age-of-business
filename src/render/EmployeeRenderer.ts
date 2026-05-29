@@ -20,10 +20,11 @@ export class EmployeeRenderer {
 
   constructor(scene: Phaser.Scene) {
     this.g = scene.add.graphics().setDepth(3);
+    const labelSize = Math.max(9, Math.round(11 * CANVAS.width / 760));
     this.benchLabel = scene.add
       .text(8, 0, 'Banc (non assignés)', {
         fontFamily: 'monospace',
-        fontSize: '11px',
+        fontSize: `${labelSize}px`,
         color: COLORS.benchLabel,
       })
       .setDepth(3);
