@@ -4,7 +4,7 @@ import type { Projection } from './projection/Projection';
 import { COLORS, ZONE_LETTER } from './theme';
 
 /**
- * Dessine les zones (rectangles colorés selon le type) et leur lettre.
+ * Dessine les zones (losanges colorés selon le type) et leur lettre.
  * Zone active (employé assigné) = opaque ; zone vide = transparente.
  */
 export class ZoneRenderer {

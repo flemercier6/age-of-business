@@ -8,7 +8,7 @@ import { BoardRenderer } from './BoardRenderer';
 import { EmployeeRenderer } from './EmployeeRenderer';
 import { InputController } from './InputController';
 import type { Projection } from './projection/Projection';
-import { TopDownProjection } from './projection/TopDownProjection';
+import { IsoProjection } from './projection/IsoProjection';
 import { computeBoardLayout } from './theme';
 import { ZoneRenderer } from './ZoneRenderer';
 
@@ -67,11 +67,11 @@ export class GameScene extends Phaser.Scene {
     const key = `${rows}x${cols}`;
     if (key === this.layoutKey) return;
     const layout = computeBoardLayout(rows, cols);
-    this.projection = new TopDownProjection(
+    this.projection = new IsoProjection(
       layout.originX,
       layout.originY,
-      layout.tile,
-      layout.tile,
+      layout.tileWidth,
+      layout.tileHeight,
     );
     this.layoutKey = key;
   }

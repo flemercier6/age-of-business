@@ -30,6 +30,18 @@ export class TopDownProjection implements Projection {
     };
   }
 
+  tilePolygon(pos: GridPos): { x: number; y: number }[] {
+    const tl = this.tileTopLeft(pos);
+    const w = this.tileWidth;
+    const h = this.tileHeight;
+    return [
+      { x: tl.x, y: tl.y }, // haut-gauche
+      { x: tl.x + w, y: tl.y }, // haut-droite
+      { x: tl.x + w, y: tl.y + h }, // bas-droite
+      { x: tl.x, y: tl.y + h }, // bas-gauche
+    ];
+  }
+
   screenToTile(x: number, y: number): GridPos {
     return {
       col: Math.floor((x - this.originX) / this.tileWidth),

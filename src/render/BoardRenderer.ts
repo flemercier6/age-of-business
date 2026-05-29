@@ -17,11 +17,11 @@ export class BoardRenderer {
     const { rows, cols } = state.office;
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
-        const tl = proj.tileTopLeft({ row, col });
+        const poly = proj.tilePolygon({ row, col });
         g.fillStyle(COLORS.cellEmpty, 1);
-        g.fillRect(tl.x + 1, tl.y + 1, proj.tileWidth - 2, proj.tileHeight - 2);
+        g.fillPoints(poly, true);
         g.lineStyle(2, COLORS.gridLine, 1);
-        g.strokeRect(tl.x + 1, tl.y + 1, proj.tileWidth - 2, proj.tileHeight - 2);
+        g.strokePoints(poly, true, true);
       }
     }
   }
