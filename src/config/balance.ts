@@ -92,8 +92,8 @@ export const BALANCE = {
       /** Coût CASH pour construire une zone Engineering. */
       buildCost: 250,
       /** TECH produite par seconde si un employé y est assigné.
-       *  Réglage actuel : 1 TECH toutes les 5s. */
-      techPerSec: 1 / 5,
+       *  Réglage actuel : 1 TECH toutes les 3s. */
+      techPerSec: 1 / 3,
     },
     marketing: {
       /** Coût CASH pour construire une zone Marketing. */

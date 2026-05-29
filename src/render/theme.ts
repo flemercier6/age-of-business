@@ -32,6 +32,7 @@ export const COLORS = {
   background: 0x11111b,
   gridLine: 0x45475a,
   cellEmpty: 0x1e1e2e,
+  cellHover: 0x2a2a40,
   zone: {
     engineering: 0x89b4fa,
     marketing: 0xf9e2af,

@@ -11,6 +11,7 @@ import type { Projection } from './projection/Projection';
 import { IsoProjection } from './projection/IsoProjection';
 import { computeBoardLayout } from './theme';
 import { ZoneRenderer } from './ZoneRenderer';
+import type { GridPos } from '../core/types';
 
 export class GameScene extends Phaser.Scene {
   private state!: GameState;
@@ -30,6 +31,9 @@ export class GameScene extends Phaser.Scene {
   private panStartY = 0;
   private prevPinchDist = 0;
   private readonly PAN_THRESHOLD = 6;
+
+  // Hover state
+  private hoveredTile: GridPos | null = null;
 
   constructor() {
     super('game');
@@ -52,6 +56,9 @@ export class GameScene extends Phaser.Scene {
       this.employeesR,
       this.cameras.main,
     );
+
+    // Disable browser context menu over the canvas.
+    this.game.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
     this.setupCameraInput();
   }
@@ -80,11 +87,13 @@ export class GameScene extends Phaser.Scene {
     this.input.addPointer(2);
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (p.id === 1) {
-        this.panStartX = p.x;
-        this.panStartY = p.y;
-        this.isPanning = false;
+      if (p.rightButtonDown()) {
+        this.controller.handleRightClick(p.x, p.y);
+        return;
       }
+      this.panStartX = p.x;
+      this.panStartY = p.y;
+      this.isPanning = false;
     });
 
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
@@ -101,7 +110,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
-      if (!this.isPanning) {
+      if (!p.rightButtonReleased() && !this.isPanning) {
         this.controller.handleClick(p.x, p.y);
       }
       if (!this.input.pointer2.isDown) {
@@ -114,7 +123,6 @@ export class GameScene extends Phaser.Scene {
     this.input.on('wheel', (p: Phaser.Input.Pointer, _go: unknown, _dx: number, dy: number) => {
       const factor = dy > 0 ? 1 / 1.1 : 1.1;
       const newZoom = Phaser.Math.Clamp(cam.zoom * factor, 0.2, 5);
-      // Keep the world point under the cursor fixed.
       const world = cam.getWorldPoint(p.x, p.y);
       cam.zoom = newZoom;
       const worldAfter = cam.getWorldPoint(p.x, p.y);
@@ -133,13 +141,23 @@ export class GameScene extends Phaser.Scene {
         cam.zoom = Phaser.Math.Clamp(cam.zoom * (dist / this.prevPinchDist), 0.2, 5);
       }
       this.prevPinchDist = dist;
-      this.isPanning = true; // évite un clic fantôme à la fin du pinch
+      this.isPanning = true;
     }
+  }
+
+  private updateHoveredTile(): void {
+    const ptr = this.input.activePointer;
+    const world = this.cameras.main.getWorldPoint(ptr.x, ptr.y);
+    const pos = this.projection.screenToTile(world.x, world.y);
+    const { rows, cols } = this.state.office;
+    this.hoveredTile =
+      pos.row >= 0 && pos.row < rows && pos.col >= 0 && pos.col < cols ? pos : null;
   }
 
   override update(_time: number, deltaMs: number): void {
     this.handlePinch();
     this.ensureProjection();
+    this.updateHoveredTile();
 
     if (!this.state.paused && !this.state.gameOver) {
       this.accumulator += deltaMs;
@@ -153,7 +171,7 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    this.board.sync(this.state, this.projection);
+    this.board.sync(this.state, this.projection, this.hoveredTile);
     this.zones.sync(this.state, this.projection);
     this.employeesR.sync(this.state, this.projection, this.controller.selectedEmployeeId);
     this.hud.sync(this.state);

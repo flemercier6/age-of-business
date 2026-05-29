@@ -10,10 +10,11 @@ import type { Projection } from './projection/Projection';
 import { CANVAS } from './theme';
 
 /**
- * Traduit les clics canvas en intentions puis en Command.
- * Les événements pointerdown/pointerup sont gérés par GameScene (qui filtre
- * drag vs clic) ; seul le clic abouti arrive ici via handleClick().
- * La conversion écran → monde passe par camera.getWorldPoint() avant screenToTile().
+ * Traduit les entrées en Command.
+ * - Clic gauche  : sélectionner un employé / ouvrir un menu — jamais d'assignation.
+ * - Clic droit   : assigner l'employé sélectionné à la zone sous le curseur.
+ * - ESPACE       : pause.
+ * GameScene filtre drag vs clic et appelle handleClick / handleRightClick.
  */
 export class InputController {
   selectedEmployeeId: number | null = null;
@@ -36,22 +37,11 @@ export class InputController {
     }
   }
 
-  /** Appelé par GameScene uniquement quand le geste est un clic (pas un drag). */
+  /** Clic gauche confirmé (pas un drag). */
   handleClick(screenX: number, screenY: number): void {
-    if (screenX < 0 || screenX > CANVAS.width || screenY < 0 || screenY > CANVAS.height) return;
-    if (this.state.gameOver) return;
+    if (!this.guardCommon(screenX, screenY)) return;
 
-    if (this.hud.isMenuOpen()) {
-      this.hud.closeOverlay();
-      return;
-    }
-
-    if (this.state.paused) {
-      this.selectedEmployeeId = null;
-      return;
-    }
-
-    // Le banc est en espace écran (scrollFactor 0) — tester avant la grille.
+    // Banc en espace écran — prioritaire sur la grille.
     const benchHit = this.employees.benchHitTest(screenX, screenY);
     if (benchHit?.kind === 'employee') {
       this.selectedEmployeeId = benchHit.id;
@@ -68,39 +58,68 @@ export class InputController {
       return;
     }
 
-    // Convertir écran → monde pour les interactions avec la grille.
-    const world = this.camera.getWorldPoint(screenX, screenY);
-    const proj = this.getProjection();
-    const pos = proj.screenToTile(world.x, world.y);
-
-    if (inBounds(this.state.office, pos)) {
-      this.handleGridClick(pos);
+    const pos = this.worldTile(screenX, screenY);
+    if (!pos || !inBounds(this.state.office, pos)) {
+      this.selectedEmployeeId = null;
       return;
     }
+    this.handleGridLeftClick(pos);
+  }
 
+  /** Clic droit — assigne l'employé sélectionné à la case visée. */
+  handleRightClick(screenX: number, screenY: number): void {
+    if (!this.guardCommon(screenX, screenY)) return;
+
+    const pos = this.worldTile(screenX, screenY);
+    if (pos && inBounds(this.state.office, pos) && this.selectedEmployeeId !== null) {
+      const zone = zoneAt(this.state, pos);
+      if (zone) this.dispatch({ kind: 'assign', employeeId: this.selectedEmployeeId, pos });
+    }
     this.selectedEmployeeId = null;
   }
 
-  private handleGridClick(pos: GridPos): void {
-    const occupant = employeeAt(this.state, pos);
-    const zone = zoneAt(this.state, pos);
+  // ---- Private helpers ----
 
+  /** Vérifie les conditions bloquantes communes aux deux types de clic. Retourne false si bloqué. */
+  private guardCommon(screenX: number, screenY: number): boolean {
+    if (screenX < 0 || screenX > CANVAS.width || screenY < 0 || screenY > CANVAS.height) return false;
+    if (this.state.gameOver) return false;
+    if (this.hud.isMenuOpen()) {
+      this.hud.closeOverlay();
+      return false;
+    }
+    if (this.state.paused) {
+      this.selectedEmployeeId = null;
+      return false;
+    }
+    return true;
+  }
+
+  /** Convertit les coordonnées écran en position monde → case grille. */
+  private worldTile(screenX: number, screenY: number): GridPos | null {
+    const world = this.camera.getWorldPoint(screenX, screenY);
+    return this.getProjection().screenToTile(world.x, world.y);
+  }
+
+  private handleGridLeftClick(pos: GridPos): void {
+    // Employé sélectionné : le clic gauche déselectionne (le clic droit assigne).
     if (this.selectedEmployeeId !== null) {
-      if (zone) this.dispatch({ kind: 'assign', employeeId: this.selectedEmployeeId, pos });
       this.selectedEmployeeId = null;
       return;
     }
 
+    const occupant = employeeAt(this.state, pos);
     if (occupant) {
       this.selectedEmployeeId = occupant.id;
       return;
     }
 
+    const zone = zoneAt(this.state, pos);
     if (zone) {
-      const occupant = zone.assignedEmployeeId !== null
+      const emp = zone.assignedEmployeeId !== null
         ? this.state.employees.find((e) => e.id === zone.assignedEmployeeId)
         : undefined;
-      this.hud.openZoneMenu(zone, occupant);
+      this.hud.openZoneMenu(zone, emp);
       return;
     }
 
