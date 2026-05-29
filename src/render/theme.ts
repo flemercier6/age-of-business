@@ -60,8 +60,18 @@ export const ZONE_LETTER: Record<ZoneType, string> = {
  * Le losange est en ratio 2:1 (tileWidth = 2 × tileHeight).
  * La grille est centrée entre le HUD du haut et le footer du bas.
  */
-export function computeBoardLayout(rows: number, cols: number) {
-  const availW = CANVAS.width - LAYOUT.margin * 2;
+/**
+ * Calcule la mise en page d'une grille isométrique dans un bandeau horizontal.
+ * @param xStart  Bord gauche de la zone disponible (pixels écran).
+ * @param availableWidth  Largeur de la zone (toute la fenêtre par défaut).
+ */
+export function computeBoardLayout(
+  rows: number,
+  cols: number,
+  xStart = 0,
+  availableWidth = CANVAS.width,
+) {
+  const availW = availableWidth - LAYOUT.margin * 2;
   const availH = CANVAS.height - HUD_TOP_H - HUD_BOT_H - LAYOUT.margin * 2;
   const span = rows + cols;
 
@@ -75,7 +85,7 @@ export function computeBoardLayout(rows: number, cols: number) {
   const gridW = span * hw;
   const gridH = span * hh;
 
-  const originX = Math.round((CANVAS.width - gridW) / 2 + rows * hw);
+  const originX = Math.round(xStart + (availableWidth - gridW) / 2 + rows * hw);
   const topMargin = HUD_TOP_H + LAYOUT.margin + Math.max(0, (availH - gridH) / 2);
   const originY = Math.round(topMargin + hh);
 

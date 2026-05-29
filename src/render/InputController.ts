@@ -83,6 +83,7 @@ export class InputController {
   /** Vérifie les conditions bloquantes communes aux deux types de clic. Retourne false si bloqué. */
   private guardCommon(screenX: number, screenY: number): boolean {
     if (screenX < 0 || screenX > CANVAS.width || screenY < 0 || screenY > CANVAS.height) return false;
+    if (screenX > CANVAS.width / 2) return false; // zone du board IA — ignorer
     if (this.state.gameOver) return false;
     if (this.hud.isMenuOpen()) {
       this.hud.closeOverlay();

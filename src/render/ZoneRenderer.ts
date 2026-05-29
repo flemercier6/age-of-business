@@ -6,9 +6,16 @@ import { COLORS, ZONE_LETTER } from './theme';
 export class ZoneRenderer {
   private g: Phaser.GameObjects.Graphics;
   private labels = new Map<number, Phaser.GameObjects.Text>();
+  private readonly labelDepth: number;
 
-  constructor(private scene: Phaser.Scene) {
-    this.g = scene.add.graphics().setDepth(1);
+  constructor(
+    private scene: Phaser.Scene,
+    depth = 1,
+    private readonly screenFixed = false,
+  ) {
+    this.g = scene.add.graphics().setDepth(depth);
+    if (screenFixed) this.g.setScrollFactor(0);
+    this.labelDepth = depth + 1;
   }
 
   sync(state: GameState, proj: Projection): void {
@@ -71,8 +78,9 @@ export class ZoneRenderer {
       if (!label) {
         label = this.scene.add
           .text(0, 0, '', { fontFamily: 'monospace', fontSize: `${fontSize}px`, color: COLORS.textLight })
-          .setDepth(2)
+          .setDepth(this.labelDepth)
           .setOrigin(0.5, 0.5);
+        if (this.screenFixed) label.setScrollFactor(0);
         this.labels.set(zone.id, label);
       }
       label.setFontSize(fontSize);

@@ -18,8 +18,9 @@ export class EmployeeRenderer {
   private benchSlots: { id: number; x: number; y: number; r: number }[] = [];
   private benchBand = { x0: 0, y0: 0, x1: 0, y1: 0 };
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, private readonly showBench = true, screenFixed = false) {
     this.worldG = scene.add.graphics().setDepth(3);
+    if (screenFixed) this.worldG.setScrollFactor(0);
     this.benchG = scene.add.graphics().setDepth(5).setScrollFactor(0);
     const labelSize = Math.max(9, Math.round(11 * Math.min(CANVAS.width, 760) / 760));
     this.benchLabel = scene.add
@@ -30,11 +31,15 @@ export class EmployeeRenderer {
       })
       .setDepth(5)
       .setScrollFactor(0);
+    if (!showBench) {
+      this.benchG.setVisible(false);
+      this.benchLabel.setVisible(false);
+    }
   }
 
   sync(state: GameState, proj: Projection, selectedId: number | null): void {
     this.worldG.clear();
-    this.benchG.clear();
+    if (this.showBench) this.benchG.clear();
 
     const byId = new Map(state.employees.map((e) => [e.id, e]));
 
@@ -53,6 +58,8 @@ export class EmployeeRenderer {
       this.worldG.fillEllipse(c.x, c.y, r * 1.5, r * 0.7);
       this.drawDot(this.worldG, c.x, c.y - lift, r, color, selectedId === zone.assignedEmployeeId);
     }
+
+    if (!this.showBench) return;
 
     // Banc — espace écran fixe, juste au-dessus du footer de contrôles.
     this.benchSlots = [];

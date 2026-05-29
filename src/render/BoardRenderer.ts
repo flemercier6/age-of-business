@@ -8,8 +8,9 @@ import { COLORS } from './theme';
 export class BoardRenderer {
   private g: Phaser.GameObjects.Graphics;
 
-  constructor(scene: Phaser.Scene) {
-    this.g = scene.add.graphics().setDepth(0);
+  constructor(scene: Phaser.Scene, depth = 0, screenFixed = false) {
+    this.g = scene.add.graphics().setDepth(depth);
+    if (screenFixed) this.g.setScrollFactor(0);
   }
 
   sync(state: GameState, proj: Projection, hoveredTile: GridPos | null): void {

@@ -156,6 +156,12 @@ export const BALANCE = {
     /** Nombre de cofounders non assignés au démarrage. */
     cofounders: 2,
   },
+
+  /** Course contre l'IA. */
+  competition: {
+    /** Premier à atteindre ce nombre de clients actifs simultanément gagne. */
+    winClients: 20,
+  },
 } as const;
 
 /** Type dérivé de la config — passé explicitement à la logique (testable). */

@@ -189,6 +189,31 @@ button .cost { color: var(--muted); float: right; }
 }
 
 .gameover h2 { color: var(--bad); }
+.win h2 { color: var(--good); }
+
+/* ---- Split-screen side labels ---- */
+#side-labels {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9;
+  display: flex;
+  pointer-events: none;
+  height: 80px; /* HUD_TOP_H */
+  align-items: flex-end;
+}
+#label-player,
+#label-ai {
+  width: 50%;
+  padding: 0 10px 5px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+#label-player { color: var(--accent); text-align: left; }
+#label-ai     { color: var(--bad);    text-align: right; }
 
 /* ---- Mobile (≤ 520px) ---- */
 @media (max-width: 520px) {

@@ -51,6 +51,7 @@ export class Hud {
     this.statusEl.id = 'hud-status';
     top.insertAdjacentElement('afterend', this.statusEl);
 
+    const win = this.balance.competition.winClients;
     top.innerHTML = `
       ${this.stat('CASH', 'v-cash')}
       ${this.stat('TECH', 'v-tech')}
@@ -60,6 +61,7 @@ export class Hud {
       ${this.stat('BURN /s', 'v-burn')}
       ${this.stat('REVENU /s', 'v-rev')}
       ${this.stat('SURVIE', 'v-time')}
+      ${this.stat(`COURSE → ${win}`, 'v-race')}
     `;
 
     controls.innerHTML = `
@@ -264,7 +266,7 @@ export class Hud {
     this.overlayEl.classList.remove('active');
   }
 
-  sync(s: GameState): void {
+  sync(s: GameState, aiState?: GameState): void {
     this.lastState = s;
     const b = this.balance;
     const net = netCashPerSec(s, b);
@@ -302,6 +304,15 @@ export class Hud {
     this.value('v-burn').textContent = `${burn.toFixed(0)} $`;
     this.value('v-rev').textContent = `${rev.toFixed(1)} $`;
     this.value('v-time').textContent = this.formatTime(s.elapsedSec);
+
+    // Course — score des deux parties.
+    const raceEl = this.value('v-race');
+    if (aiState) {
+      const winning = s.clients.length > aiState.clients.length;
+      const losing = s.clients.length < aiState.clients.length;
+      raceEl.textContent = `TU ${s.clients.length} · IA ${aiState.clients.length}`;
+      raceEl.className = `value ${winning ? 'good' : losing ? 'bad' : ''}`;
+    }
 
     // Boutons.
     const blocked = s.paused || s.gameOver;
@@ -350,6 +361,29 @@ export class Hud {
     }
 
     if (s.gameOver && !this.gameOverShown) this.showGameOver(s);
+  }
+
+  showRaceResult(winner: 'player' | 'ai', playerState: GameState, aiState: GameState): void {
+    this.gameOverShown = true;
+    this.closeOverlay();
+    const won = winner === 'player';
+    const win = this.balance.competition.winClients;
+    this.overlayEl.innerHTML = `
+      <div class="modal ${won ? 'win' : 'gameover'}">
+        <h2>${won ? 'VICTOIRE !' : 'DÉFAITE'}</h2>
+        <p>${won
+          ? `Vous avez atteint ${win} clients avant le concurrent !`
+          : `Le concurrent vous a devancé avec ${win} clients.`
+        }</p>
+        <p>Vous : ${playerState.clients.length} clients actifs · ${this.formatTime(playerState.elapsedSec)}</p>
+        <p>Concurrent : ${aiState.clients.length} clients actifs</p>
+        <div class="options">
+          <button id="restart">Rejouer</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('restart')?.addEventListener('click', () => location.reload());
+    this.overlayEl.classList.add('active');
   }
 
   private showGameOver(s: GameState): void {
