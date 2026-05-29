@@ -149,8 +149,6 @@ export const BALANCE = {
   start: {
     /** Nombre de cofounders non assignés au démarrage. */
     cofounders: 2,
-    /** Zone Engineering déjà posée au démarrage (coords grille row/col). */
-    initialEngineeringZone: { row: 0, col: 0 },
   },
 } as const;
 

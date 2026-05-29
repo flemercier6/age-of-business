@@ -3,7 +3,7 @@ import type { Client } from './client';
 import { createEmployee, type Employee } from './employee';
 import { createOffice, type Office } from './office';
 import type { Resources } from './resources';
-import { createZone, type Zone } from './zone';
+import type { Zone } from './zone';
 
 export interface Flags {
   mvpLaunched: boolean;
@@ -48,15 +48,9 @@ export function createInitialState(balance: Balance): GameState {
     employees.push(createEmployee(i + 1, balance.employee.salaryPerSec, true, 1.0, 'cofounder'));
   }
 
-  const startZone = createZone(
-    1,
-    { ...balance.start.initialEngineeringZone },
-    'engineering',
-  );
-
   return {
     office,
-    zones: [startZone],
+    zones: [],
     employees,
     clients: [],
     resources: { cash: balance.resources.startingCash, tech: 0, brand: 0 },
@@ -68,7 +62,7 @@ export function createInitialState(balance: Balance): GameState {
     paused: false,
     gameOver: false,
     gameOverReason: null,
-    nextZoneId: 2,
+    nextZoneId: 1,
     nextEmployeeId: balance.start.cofounders + 1,
     nextClientId: 1,
   };
