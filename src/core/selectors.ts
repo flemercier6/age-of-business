@@ -65,7 +65,9 @@ export function unassignedEmployees(s: GameState): Employee[] {
 
 /** Vrai si au moins une zone Marketing est active (produit de la Brand). */
 export function isMarketingActive(s: GameState): boolean {
-  return s.zones.some((z) => z.type === 'marketing' && z.assignedEmployeeId !== null);
+  return s.zones.some(
+    (z) => z.type === 'marketing' && z.assignedEmployeeId !== null && z.buildSecondsRemaining === 0,
+  );
 }
 
 /** Vrai si la Brand décroît actuellement (alerte visuelle). */

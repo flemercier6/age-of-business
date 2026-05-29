@@ -96,7 +96,7 @@ export const BALANCE = {
     marketing: {
       buildCost: 350,
       buildTimeSec: 35,
-      brandPerSec: 1 / 30,
+      brandPerSec: 1 / 8,
       cashCostPerSec: 5,
     },
     sales: {

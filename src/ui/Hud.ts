@@ -289,7 +289,7 @@ export class Hud {
     // BRAND avec alerte de decay.
     const brandEl = this.value('v-brand');
     const decaying = isBrandDecaying(s);
-    brandEl.textContent = `${Math.floor(s.resources.brand)}${decaying ? ' ↓' : ''}`;
+    brandEl.textContent = `${s.resources.brand.toFixed(1)}${decaying ? ' ↓' : ''}`;
     brandEl.className = `value ${decaying ? 'warn' : ''}`;
 
     this.value('v-clients').textContent = `${s.clients.length}`;
