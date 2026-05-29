@@ -30,6 +30,8 @@ export class GameScene extends Phaser.Scene {
   private panStartX = 0;
   private panStartY = 0;
   private prevPinchDist = 0;
+  private prevPinchMidX = 0;
+  private prevPinchMidY = 0;
   private readonly PAN_THRESHOLD = 6;
 
   // Hover state
@@ -59,6 +61,8 @@ export class GameScene extends Phaser.Scene {
 
     // Disable browser context menu over the canvas.
     this.game.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    // Prevent browser page-zoom on trackpad pinch (ctrl+wheel).
+    this.game.canvas.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
 
     this.setupCameraInput();
   }
@@ -116,32 +120,67 @@ export class GameScene extends Phaser.Scene {
       if (!this.input.pointer2.isDown) {
         this.isPanning = false;
         this.prevPinchDist = 0;
+        this.prevPinchMidX = 0;
+        this.prevPinchMidY = 0;
       }
     });
 
-    // Scroll wheel zoom — zooms toward the pointer position.
-    this.input.on('wheel', (p: Phaser.Input.Pointer, _go: unknown, _dx: number, dy: number) => {
-      const factor = dy > 0 ? 1 / 1.1 : 1.1;
-      const newZoom = Phaser.Math.Clamp(cam.zoom * factor, 0.2, 5);
-      const world = cam.getWorldPoint(p.x, p.y);
-      cam.zoom = newZoom;
-      const worldAfter = cam.getWorldPoint(p.x, p.y);
-      cam.scrollX += world.x - worldAfter.x;
-      cam.scrollY += world.y - worldAfter.y;
+    // Wheel event : pinch trackpad (ctrlKey) → zoom ; deux doigts scroll → pan.
+    this.input.on('wheel', (p: Phaser.Input.Pointer, _go: unknown, dx: number, dy: number) => {
+      const native = p.event as WheelEvent;
+      if (native.ctrlKey) {
+        // Pinch trackpad ou Ctrl+scroll → zoom centré sur le curseur.
+        const factor = dy > 0 ? 1 / 1.1 : 1.1;
+        const newZoom = Phaser.Math.Clamp(cam.zoom * factor, 0.2, 5);
+        const world = cam.getWorldPoint(p.x, p.y);
+        cam.zoom = newZoom;
+        const worldAfter = cam.getWorldPoint(p.x, p.y);
+        cam.scrollX += world.x - worldAfter.x;
+        cam.scrollY += world.y - worldAfter.y;
+      } else {
+        // Deux doigts scroll trackpad → déplacement de la caméra.
+        cam.scrollX += dx / cam.zoom;
+        cam.scrollY += dy / cam.zoom;
+      }
     });
   }
 
+  /**
+   * Gère les gestes deux doigts sur écran tactile :
+   * - écartement / rapprochement → zoom
+   * - déplacement commun → pan
+   * Les deux sont combinés en une seule formule : le point monde sous le
+   * milieu des deux doigts (au frame précédent) se retrouve sous le milieu
+   * actuel, avec la mise à l'échelle appliquée.
+   */
   private handlePinch(): void {
     const p1 = this.input.pointer1;
     const p2 = this.input.pointer2;
     if (p1.isDown && p2.isDown) {
       const dist = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
+      const midX = (p1.x + p2.x) / 2;
+      const midY = (p1.y + p2.y) / 2;
+      const cam = this.cameras.main;
+
       if (this.prevPinchDist > 0 && dist > 0) {
-        const cam = this.cameras.main;
-        cam.zoom = Phaser.Math.Clamp(cam.zoom * (dist / this.prevPinchDist), 0.2, 5);
+        // Point monde sous le milieu précédent.
+        const worldMid = cam.getWorldPoint(this.prevPinchMidX, this.prevPinchMidY);
+        // Nouveau zoom.
+        const newZoom = Phaser.Math.Clamp(cam.zoom * (dist / this.prevPinchDist), 0.2, 5);
+        cam.zoom = newZoom;
+        // Le point monde précédent doit se retrouver sous le milieu actuel.
+        cam.scrollX = worldMid.x - midX / newZoom;
+        cam.scrollY = worldMid.y - midY / newZoom;
       }
+
       this.prevPinchDist = dist;
+      this.prevPinchMidX = midX;
+      this.prevPinchMidY = midY;
       this.isPanning = true;
+    } else {
+      this.prevPinchDist = 0;
+      this.prevPinchMidX = 0;
+      this.prevPinchMidY = 0;
     }
   }
 
