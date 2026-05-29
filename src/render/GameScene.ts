@@ -12,11 +12,6 @@ import { IsoProjection } from './projection/IsoProjection';
 import { computeBoardLayout } from './theme';
 import { ZoneRenderer } from './ZoneRenderer';
 
-/**
- * Scène Phaser : possède l'état du jeu, pilote la boucle temps réel à pas fixe,
- * et orchestre rendu + entrées. Elle ne contient AUCUNE règle de gameplay :
- * tout passe par core/ (tick + applyCommand).
- */
 export class GameScene extends Phaser.Scene {
   private state!: GameState;
   private projection!: Projection;
@@ -28,6 +23,13 @@ export class GameScene extends Phaser.Scene {
   private employeesR!: EmployeeRenderer;
   private controller!: InputController;
   private hud!: Hud;
+
+  // Pan / zoom state
+  private isPanning = false;
+  private panStartX = 0;
+  private panStartY = 0;
+  private prevPinchDist = 0;
+  private readonly PAN_THRESHOLD = 6;
 
   constructor() {
     super('game');
@@ -48,20 +50,17 @@ export class GameScene extends Phaser.Scene {
       this.hud,
       () => this.projection,
       this.employeesR,
+      this.cameras.main,
     );
+
+    this.setupCameraInput();
   }
 
-  /** Tous les ordres passent ici ; les échecs remontent un message au HUD. */
   private dispatch(cmd: Command): void {
     const res = applyCommand(this.state, cmd, BALANCE);
     if (!res.ok && res.reason) this.hud.flash(res.reason);
   }
 
-  /**
-   * (Re)construit la Projection quand les dimensions de la grille changent
-   * (au démarrage et après un déménagement). C'est l'UNIQUE point de couplage
-   * au type de projection : passer en iso = changer la classe instanciée ici.
-   */
   private ensureProjection(): void {
     const { rows, cols } = this.state.office;
     const key = `${rows}x${cols}`;
@@ -76,10 +75,72 @@ export class GameScene extends Phaser.Scene {
     this.layoutKey = key;
   }
 
+  private setupCameraInput(): void {
+    const cam = this.cameras.main;
+    this.input.addPointer(2);
+
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      if (p.id === 1) {
+        this.panStartX = p.x;
+        this.panStartY = p.y;
+        this.isPanning = false;
+      }
+    });
+
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (!p.isDown || this.input.pointer2.isDown) return;
+      const dx = p.x - this.panStartX;
+      const dy = p.y - this.panStartY;
+      if (!this.isPanning && (Math.abs(dx) > this.PAN_THRESHOLD || Math.abs(dy) > this.PAN_THRESHOLD)) {
+        this.isPanning = true;
+      }
+      if (this.isPanning) {
+        cam.scrollX -= (p.x - p.prevPosition.x) / cam.zoom;
+        cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
+      }
+    });
+
+    this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
+      if (!this.isPanning) {
+        this.controller.handleClick(p.x, p.y);
+      }
+      if (!this.input.pointer2.isDown) {
+        this.isPanning = false;
+        this.prevPinchDist = 0;
+      }
+    });
+
+    // Scroll wheel zoom — zooms toward the pointer position.
+    this.input.on('wheel', (p: Phaser.Input.Pointer, _go: unknown, _dx: number, dy: number) => {
+      const factor = dy > 0 ? 1 / 1.1 : 1.1;
+      const newZoom = Phaser.Math.Clamp(cam.zoom * factor, 0.2, 5);
+      // Keep the world point under the cursor fixed.
+      const world = cam.getWorldPoint(p.x, p.y);
+      cam.zoom = newZoom;
+      const worldAfter = cam.getWorldPoint(p.x, p.y);
+      cam.scrollX += world.x - worldAfter.x;
+      cam.scrollY += world.y - worldAfter.y;
+    });
+  }
+
+  private handlePinch(): void {
+    const p1 = this.input.pointer1;
+    const p2 = this.input.pointer2;
+    if (p1.isDown && p2.isDown) {
+      const dist = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
+      if (this.prevPinchDist > 0 && dist > 0) {
+        const cam = this.cameras.main;
+        cam.zoom = Phaser.Math.Clamp(cam.zoom * (dist / this.prevPinchDist), 0.2, 5);
+      }
+      this.prevPinchDist = dist;
+      this.isPanning = true; // évite un clic fantôme à la fin du pinch
+    }
+  }
+
   override update(_time: number, deltaMs: number): void {
+    this.handlePinch();
     this.ensureProjection();
 
-    // Boucle temps réel à pas fixe (déterministe). Pause => on ne tick pas.
     if (!this.state.paused && !this.state.gameOver) {
       this.accumulator += deltaMs;
       const stepMs = BALANCE.simulation.fixedStepMs;

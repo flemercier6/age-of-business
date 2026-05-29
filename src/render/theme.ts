@@ -5,28 +5,27 @@ import type { ZoneType } from '../core/types';
  * Volontairement séparées de balance.ts : ici rien n'influe sur le gameplay.
  */
 
-/** Taille du canvas en px — s'adapte à la largeur du viewport. */
-const canvasSize =
-  typeof window !== 'undefined'
-    ? Math.min(760, Math.max(288, window.innerWidth - 16))
-    : 760;
+const vw = typeof window !== 'undefined' ? window.innerWidth : 760;
+const vh = typeof window !== 'undefined' ? window.innerHeight : 760;
 
-export const CANVAS = { width: canvasSize, height: canvasSize };
+/** Le canvas Phaser occupe tout le viewport. */
+export const CANVAS = { width: vw, height: vh };
 
-const r = canvasSize / 760;
+/** Hauteur de la barre HUD + status en haut (overlay HTML fixe). */
+export const HUD_TOP_H = 80;
+/** Hauteur du footer de contrôles en bas (overlay HTML fixe). */
+export const HUD_BOT_H = 72;
+
+const ref = Math.min(760, Math.min(vw, vh));
+const r = ref / 760;
 
 export const LAYOUT = {
-  /** Marge autour de la grille (px). */
-  margin: Math.max(12, Math.round(36 * r)),
-  /** Taille maximale d'une case (px) pour éviter une grille géante au Garage. */
+  margin: Math.max(8, Math.round(20 * r)),
   maxTile: Math.max(40, Math.round(150 * r)),
-  /** Hauteur réservée en bas du canvas pour le "banc" des employés libres. */
-  benchHeight: Math.max(70, Math.round(130 * r)),
-  /** Espace entre le bas de la grille et le banc. */
-  benchTop: Math.max(6, Math.round(26 * r)),
-  /** Diamètre nominal d'un emplacement du banc. */
-  benchSlot: Math.max(24, Math.round(50 * r)),
-  benchGap: Math.max(2, Math.round(16 * r)),
+  benchHeight: Math.max(60, Math.round(110 * r)),
+  benchTop: Math.max(4, Math.round(16 * r)),
+  benchSlot: Math.max(20, Math.round(46 * r)),
+  benchGap: Math.max(2, Math.round(12 * r)),
 };
 
 export const COLORS = {
@@ -34,12 +33,12 @@ export const COLORS = {
   gridLine: 0x45475a,
   cellEmpty: 0x1e1e2e,
   zone: {
-    engineering: 0x89b4fa, // bleu
-    marketing: 0xf9e2af, // jaune
-    sales: 0xa6e3a1, // vert
+    engineering: 0x89b4fa,
+    marketing: 0xf9e2af,
+    sales: 0xa6e3a1,
   } as Record<ZoneType, number>,
-  employeeUnassigned: 0xbac2de, // gris neutre (recrues)
-  cofounder: 0xcba6f7, // mauve — couleur distinctive des 2 cofounders
+  employeeUnassigned: 0xbac2de,
+  cofounder: 0xcba6f7,
   selectionRing: 0xf38ba8,
   dotOutline: 0x11111b,
   shadow: 0x000000,
@@ -56,22 +55,17 @@ export const ZONE_LETTER: Record<ZoneType, string> = {
 };
 
 /**
- * Calcule la mise en page écran de la grille ISOMÉTRIQUE pour des dimensions
- * données. Le losange est en ratio 2:1 (largeur = 2 × hauteur). La boîte
- * englobante de la grille mesure :
- *   W = (rows + cols) × tileWidth / 2
- *   H = (rows + cols) × tileHeight / 2
- * On dimensionne la case pour que Garage ET Bureau tiennent dans le canvas,
- * puis on centre la grille horizontalement et verticalement.
+ * Calcule la mise en page initiale de la grille ISOMÉTRIQUE dans l'espace monde.
+ * Le losange est en ratio 2:1 (tileWidth = 2 × tileHeight).
+ * La grille est centrée entre le HUD du haut et le footer du bas.
  */
 export function computeBoardLayout(rows: number, cols: number) {
   const availW = CANVAS.width - LAYOUT.margin * 2;
-  const availH = CANVAS.height - LAYOUT.benchHeight - LAYOUT.margin * 2;
+  const availH = CANVAS.height - HUD_TOP_H - HUD_BOT_H - LAYOUT.margin * 2;
   const span = rows + cols;
 
-  // tileWidth = 2 × tileHeight ⇒ W = span × tileHeight, H = span × tileHeight / 2.
-  const thByWidth = availW / span; // contrainte largeur
-  const thByHeight = (availH * 2) / span; // contrainte hauteur
+  const thByWidth = availW / span;
+  const thByHeight = (availH * 2) / span;
   const tileHeight = Math.max(16, Math.floor(Math.min(LAYOUT.maxTile / 2, thByWidth, thByHeight)));
   const tileWidth = tileHeight * 2;
 
@@ -80,11 +74,8 @@ export function computeBoardLayout(rows: number, cols: number) {
   const gridW = span * hw;
   const gridH = span * hh;
 
-  // Origine = centre du losange (0,0). On centre la boîte englobante :
-  // - son bord gauche est à originX − rows × hw ;
-  // - son bord haut  est à originY − hh.
   const originX = Math.round((CANVAS.width - gridW) / 2 + rows * hw);
-  const topMargin = LAYOUT.margin + Math.max(0, (availH - gridH) / 2);
+  const topMargin = HUD_TOP_H + LAYOUT.margin + Math.max(0, (availH - gridH) / 2);
   const originY = Math.round(topMargin + hh);
 
   return { tileWidth, tileHeight, originX, originY, gridW, gridH };
