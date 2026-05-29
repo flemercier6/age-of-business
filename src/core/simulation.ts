@@ -14,8 +14,12 @@ export function tick(s: GameState, dt: number, b: Balance): void {
   let marketingActive = false;
   let clientAccrualThisTick = 0;
 
-  // 1) Production des zones ayant un employé assigné.
+  // 1) Construction des zones en cours, puis production.
   for (const zone of s.zones) {
+    if (zone.buildSecondsRemaining > 0) {
+      zone.buildSecondsRemaining = Math.max(0, zone.buildSecondsRemaining - dt);
+      continue; // zone pas encore opérationnelle
+    }
     if (zone.assignedEmployeeId === null) continue;
 
     const emp = s.employees.find((e) => e.id === zone.assignedEmployeeId);

@@ -89,33 +89,23 @@ export const BALANCE = {
   /** Zones de département (1 case = 1 zone = 1 employé max). */
   zones: {
     engineering: {
-      /** Coût CASH pour construire une zone Engineering. */
       buildCost: 250,
-      /** TECH produite par seconde si un employé y est assigné.
-       *  Réglage actuel : 1 TECH toutes les 3s. */
+      /** Durée de construction en secondes. */
+      buildTimeSec: 35,
+      /** TECH produite par seconde si un employé y est assigné (1 toutes les 3s). */
       techPerSec: 1 / 3,
     },
     marketing: {
-      /** Coût CASH pour construire une zone Marketing. */
       buildCost: 350,
-      /** BRAND produite par seconde si un employé y est assigné.
-       *  Réglage actuel : 1 BRAND toutes les 30s. */
+      buildTimeSec: 35,
       brandPerSec: 1 / 30,
-      /** CASH consommé par seconde pendant que la zone produit. */
       cashCostPerSec: 5,
     },
     sales: {
-      /** Coût CASH pour construire une zone Sales. */
       buildCost: 350,
-      /** Clients acquis par seconde SANS Brand (rythme de base, lent).
-       *  Requiert que le MVP soit lancé.
-       *  Réglage actuel : 1 client toutes les 30s. */
+      buildTimeSec: 35,
       baseClientsPerSec: 1 / 30,
-      /** Multiplicateur d'acquisition apporté par la Brand :
-       *  rythme = base * (1 + BRAND * brandMultiplierPerBrand). */
       brandMultiplierPerBrand: 0.04,
-      /** BRAND consommée par seconde, par zone Sales active, tant que la
-       *  Brand booste l'acquisition (BRAND > 0). */
       brandConsumedPerSec: 3,
     },
   },

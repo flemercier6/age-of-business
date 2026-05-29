@@ -116,6 +116,10 @@ export class InputController {
 
     const zone = zoneAt(this.state, pos);
     if (zone) {
+      if (zone.buildSecondsRemaining > 0) {
+        this.hud.flash(`En construction — encore ${Math.ceil(zone.buildSecondsRemaining)}s`);
+        return;
+      }
       const emp = zone.assignedEmployeeId !== null
         ? this.state.employees.find((e) => e.id === zone.assignedEmployeeId)
         : undefined;

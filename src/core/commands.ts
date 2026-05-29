@@ -53,7 +53,7 @@ function buildZone(s: GameState, pos: GridPos, type: ZoneType, b: Balance): Comm
   const cost = b.zones[type].buildCost;
   if (s.resources.cash < cost) return fail('CASH insuffisant');
   s.resources.cash -= cost;
-  s.zones.push(createZone(s.nextZoneId++, { ...pos }, type));
+  s.zones.push(createZone(s.nextZoneId++, { ...pos }, type, b.zones[type].buildTimeSec));
   return ok();
 }
 
@@ -62,6 +62,7 @@ function assign(s: GameState, employeeId: number, pos: GridPos): CommandResult {
   if (!emp) return fail('Employé introuvable');
   const zone = zoneAt(s, pos);
   if (!zone) return fail('Aucune zone ici');
+  if (zone.buildSecondsRemaining > 0) return fail('Zone en construction');
   if (zone.assignedEmployeeId !== null && zone.assignedEmployeeId !== emp.id) {
     return fail('Zone déjà occupée');
   }
@@ -90,6 +91,7 @@ function recruit(s: GameState, profile: EmployeeProfile, zoneId: number, b: Bala
 
   const zone = s.zones.find((z) => z.id === zoneId);
   if (!zone) return fail('Zone introuvable');
+  if (zone.buildSecondsRemaining > 0) return fail('Zone en construction');
   if (zone.assignedEmployeeId !== null) return fail('Zone déjà occupée');
 
   const cfg = b.profiles[profile];
