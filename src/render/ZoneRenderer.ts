@@ -18,34 +18,36 @@ export class ZoneRenderer {
   sync(state: GameState, proj: Projection): void {
     const g = this.g;
     g.clear();
-    const pad = Math.max(6, proj.tileWidth * 0.08);
     const seen = new Set<number>();
 
     for (const zone of state.zones) {
       seen.add(zone.id);
-      const tl = proj.tileTopLeft(zone.pos);
+      const center = proj.tileToScreen(zone.pos);
+      // Losange légèrement réduit vers le centre pour laisser voir le quadrillage.
+      const poly = proj.tilePolygon(zone.pos).map((p) => ({
+        x: center.x + (p.x - center.x) * 0.86,
+        y: center.y + (p.y - center.y) * 0.86,
+      }));
       const active = zone.assignedEmployeeId !== null;
       const color = COLORS.zone[zone.type];
 
       g.fillStyle(color, active ? COLORS.zoneActiveAlpha : COLORS.zoneInactiveAlpha);
-      g.fillRoundedRect(
-        tl.x + pad,
-        tl.y + pad,
-        proj.tileWidth - pad * 2,
-        proj.tileHeight - pad * 2,
-        8,
-      );
+      g.fillPoints(poly, true);
+      g.lineStyle(2, color, active ? 1 : 0.4);
+      g.strokePoints(poly, true, true);
 
+      const fontSize = Math.max(10, Math.round(proj.tileHeight * 0.55));
       let label = this.labels.get(zone.id);
       if (!label) {
         label = this.scene.add
-          .text(0, 0, '', { fontFamily: 'monospace', fontSize: '20px', color: COLORS.textLight })
+          .text(0, 0, '', { fontFamily: 'monospace', fontSize: `${fontSize}px`, color: COLORS.textLight })
           .setDepth(2)
           .setOrigin(0.5, 0.5);
         this.labels.set(zone.id, label);
       }
+      label.setFontSize(fontSize);
       label.setText(ZONE_LETTER[zone.type]);
-      label.setPosition(tl.x + proj.tileWidth / 2, tl.y + pad + 14);
+      label.setPosition(center.x, center.y);
       label.setAlpha(active ? 1 : 0.5);
     }
 

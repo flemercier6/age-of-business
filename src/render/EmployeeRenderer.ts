@@ -35,31 +35,31 @@ export class EmployeeRenderer {
 
     const byId = new Map(state.employees.map((e) => [e.id, e]));
 
-    // Employés assignés, sur la case de leur zone.
-    for (const zone of state.zones) {
-      if (zone.assignedEmployeeId === null) continue;
-      const emp = byId.get(zone.assignedEmployeeId);
+    // Employés assignés : triés par profondeur iso (row+col croissant) pour que
+    // les jetons "devant" recouvrent ceux "derrière".
+    const assigned = state.zones
+      .filter((z) => z.assignedEmployeeId !== null)
+      .sort((a, b) => a.pos.row + a.pos.col - (b.pos.row + b.pos.col));
+
+    const r = Math.max(8, proj.tileWidth * 0.16);
+    const lift = r * 0.7;
+    for (const zone of assigned) {
+      const emp = byId.get(zone.assignedEmployeeId as number);
       const c = proj.tileToScreen(zone.pos);
-      const r = Math.min(proj.tileWidth, proj.tileHeight) * 0.17;
       // Cofounder = couleur distinctive ; sinon couleur de la zone.
       const color = emp?.isCofounder ? COLORS.cofounder : COLORS.zone[zone.type];
-      this.drawDot(
-        g,
-        c.x,
-        c.y + proj.tileHeight * 0.18,
-        r,
-        color,
-        selectedId === zone.assignedEmployeeId,
-      );
+      // Ombre portée au sol (centre de la case) pour ancrer le jeton.
+      g.fillStyle(COLORS.shadow, 0.28);
+      g.fillEllipse(c.x, c.y, r * 1.5, r * 0.7);
+      this.drawDot(g, c.x, c.y - lift, r, color, selectedId === zone.assignedEmployeeId);
     }
 
-    // Banc : employés non assignés.
+    // Banc : employés non assignés, ancré en bas du canvas (sous la grille iso).
     this.benchSlots = [];
-    const bottom = proj.tileTopLeft({ row: state.office.rows, col: 0 }).y;
-    const bandY0 = bottom + LAYOUT.benchTop;
+    const bandY0 = CANVAS.height - LAYOUT.benchHeight + LAYOUT.benchTop;
     const slot = LAYOUT.benchSlot;
     const gap = LAYOUT.benchGap;
-    const r = slot * 0.42;
+    const benchR = slot * 0.42;
     const cy = bandY0 + slot / 2;
 
     this.benchLabel.setPosition(LAYOUT.margin, bandY0 - 16);
@@ -70,8 +70,8 @@ export class EmployeeRenderer {
     let x = (CANVAS.width - total) / 2 + slot / 2;
     for (const emp of free) {
       const color = emp.isCofounder ? COLORS.cofounder : COLORS.employeeUnassigned;
-      this.drawDot(g, x, cy, r, color, selectedId === emp.id);
-      this.benchSlots.push({ id: emp.id, x, y: cy, r: r + 5 });
+      this.drawDot(g, x, cy, benchR, color, selectedId === emp.id);
+      this.benchSlots.push({ id: emp.id, x, y: cy, r: Math.max(20, benchR + 5) });
       x += slot + gap;
     }
   }
