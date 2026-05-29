@@ -28,10 +28,8 @@ export const BALANCE = {
    * périodiques. C'est la SEULE source de revenu du jeu.
    */
   revenue: {
-    /** Période entre deux versements (secondes) : un client paie toutes les 10s. */
+    /** Période entre deux versements (secondes). */
     billingCycleSec: 10,
-    /** Montant CASH reçu d'un client à chaque versement. */
-    cashPerPayment: 100,
   },
 
   /**
@@ -110,11 +108,19 @@ export const BALANCE = {
     },
   },
 
-  /** Jalon produit. */
+  /** Options de lancement du MVP (choix exclusif, irréversible). */
   product: {
-    /** TECH nécessaire pour rendre actif le bouton "Lancer le MVP".
-     *  Tant que le MVP n'est pas lancé, Sales n'acquiert aucun client. */
-    mvpTechThreshold: 100,
+    mvpSaaS: {
+      techCost: 30,
+      cashCost: 200,
+      /** CASH reçu d'un client à chaque versement. */
+      revenuePerPayment: 10,
+    },
+    mvpAI: {
+      techCost: 100,
+      cashCost: 500,
+      revenuePerPayment: 20,
+    },
   },
 
   /** Réputation (BRAND). */

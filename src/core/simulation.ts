@@ -73,7 +73,7 @@ export function tick(s: GameState, dt: number, b: Balance): void {
   while (s.billingTimerSec >= b.revenue.billingCycleSec) {
     s.billingTimerSec -= b.revenue.billingCycleSec;
     for (const c of s.clients) {
-      r.cash += b.revenue.cashPerPayment;
+      r.cash += s.mvpRevenuePerPayment;
       c.paymentsRemaining -= 1;
     }
     s.clients = s.clients.filter((c) => c.paymentsRemaining > 0);

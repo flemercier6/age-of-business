@@ -26,7 +26,7 @@ export function clientCount(s: GameState): number {
  * et le calcul du net.
  */
 export function revenuePerSec(s: GameState, b: Balance): number {
-  return (s.clients.length * b.revenue.cashPerPayment) / b.revenue.billingCycleSec;
+  return (s.clients.length * s.mvpRevenuePerPayment) / b.revenue.billingCycleSec;
 }
 
 /** Secondes restantes avant le prochain versement des clients. */
@@ -73,8 +73,14 @@ export function isBrandDecaying(s: GameState): boolean {
   return !isMarketingActive(s) && s.resources.brand > 0;
 }
 
+/** Peut lancer au moins une des deux options MVP. */
 export function canLaunchMvp(s: GameState, b: Balance): boolean {
-  return !s.flags.mvpLaunched && s.resources.tech >= b.product.mvpTechThreshold;
+  if (s.flags.mvpLaunched) return false;
+  const saas = b.product.mvpSaaS;
+  const ai = b.product.mvpAI;
+  const canSaaS = s.resources.tech >= saas.techCost && s.resources.cash >= saas.cashCost;
+  const canAI = s.resources.tech >= ai.techCost && s.resources.cash >= ai.cashCost;
+  return canSaaS || canAI;
 }
 
 export function canRelocate(s: GameState, b: Balance): boolean {

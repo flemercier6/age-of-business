@@ -16,7 +16,7 @@ export type Command =
   | { kind: 'assign'; employeeId: number; pos: GridPos }
   | { kind: 'unassign'; employeeId: number }
   | { kind: 'recruit'; profile: EmployeeProfile; zoneId: number }
-  | { kind: 'launchMvp' }
+  | { kind: 'launchMvp'; mvpType: 'saas' | 'ai' }
   | { kind: 'relocate' };
 
 export interface CommandResult {
@@ -41,7 +41,7 @@ export function applyCommand(s: GameState, cmd: Command, b: Balance): CommandRes
     case 'recruit':
       return recruit(s, cmd.profile, cmd.zoneId, b);
     case 'launchMvp':
-      return launchMvp(s, b);
+      return launchMvp(s, cmd.mvpType, b);
     case 'relocate':
       return relocate(s, b);
   }
@@ -110,10 +110,15 @@ function recruit(s: GameState, profile: EmployeeProfile, zoneId: number, b: Bala
   return ok();
 }
 
-function launchMvp(s: GameState, b: Balance): CommandResult {
+function launchMvp(s: GameState, mvpType: 'saas' | 'ai', b: Balance): CommandResult {
   if (s.flags.mvpLaunched) return fail('MVP déjà lancé');
-  if (s.resources.tech < b.product.mvpTechThreshold) return fail('TECH insuffisante');
+  const cfg = mvpType === 'saas' ? b.product.mvpSaaS : b.product.mvpAI;
+  if (s.resources.tech < cfg.techCost) return fail('TECH insuffisante');
+  if (s.resources.cash < cfg.cashCost) return fail('CASH insuffisant');
+  s.resources.tech -= cfg.techCost;
+  s.resources.cash -= cfg.cashCost;
   s.flags.mvpLaunched = true;
+  s.mvpRevenuePerPayment = cfg.revenuePerPayment;
   return ok();
 }
 

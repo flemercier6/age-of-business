@@ -70,7 +70,7 @@ export class Hud {
     this.btnMvp = document.getElementById('btn-mvp') as HTMLButtonElement;
     this.btnRelocate = document.getElementById('btn-relocate') as HTMLButtonElement;
 
-    this.btnMvp.addEventListener('click', () => this.dispatch({ kind: 'launchMvp' }));
+    this.btnMvp.addEventListener('click', () => this.openMvpModal());
     this.btnRelocate.addEventListener('click', () => this.dispatch({ kind: 'relocate' }));
   }
 
@@ -209,6 +209,49 @@ export class Hud {
     this.overlayEl.classList.add('active');
   }
 
+  openMvpModal(): void {
+    if (this.gameOverShown || !this.lastState) return;
+    const s = this.lastState;
+    const b = this.balance;
+    const saas = b.product.mvpSaaS;
+    const ai = b.product.mvpAI;
+    const tech = Math.floor(s.resources.tech);
+    const cash = Math.floor(s.resources.cash);
+
+    const canSaaS = tech >= saas.techCost && cash >= saas.cashCost;
+    const canAI = tech >= ai.techCost && cash >= ai.cashCost;
+
+    this.overlayEl.innerHTML = `
+      <div class="modal">
+        <h2>Lancer le MVP</h2>
+        <p>Choisissez votre stratégie produit :</p>
+        <div class="options">
+          <button id="mvp-saas" ${canSaaS ? '' : 'disabled'}>
+            <strong>MVP SaaS</strong>
+            <br><small>Revenu ${saas.revenuePerPayment} $ / versement client</small>
+            <span class="cost">${saas.techCost} TECH + ${saas.cashCost} $</span>
+          </button>
+          <button id="mvp-ai" ${canAI ? '' : 'disabled'}>
+            <strong>MVP AI</strong>
+            <br><small>Revenu ${ai.revenuePerPayment} $ / versement client</small>
+            <span class="cost">${ai.techCost} TECH + ${ai.cashCost} $</span>
+          </button>
+          <button id="mvp-cancel">Annuler</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('mvp-saas')?.addEventListener('click', () => {
+      this.dispatch({ kind: 'launchMvp', mvpType: 'saas' });
+      this.closeOverlay();
+    });
+    document.getElementById('mvp-ai')?.addEventListener('click', () => {
+      this.dispatch({ kind: 'launchMvp', mvpType: 'ai' });
+      this.closeOverlay();
+    });
+    document.getElementById('mvp-cancel')?.addEventListener('click', () => this.closeOverlay());
+    this.overlayEl.classList.add('active');
+  }
+
   closeBuildMenu(): void {
     this.closeOverlay();
   }
@@ -233,13 +276,13 @@ export class Hud {
     cashEl.textContent = `${Math.floor(s.resources.cash)} $ ${net >= 0 ? '▲' : '▼'}`;
     cashEl.className = `value ${net >= 0 ? 'good' : 'bad'}`;
 
-    // TECH avec progression vers le MVP.
+    // TECH avec indication MVP.
     const techEl = this.value('v-tech');
     if (s.flags.mvpLaunched) {
       techEl.textContent = `${Math.floor(s.resources.tech)} ✓MVP`;
       techEl.className = 'value good';
     } else {
-      techEl.textContent = `${Math.floor(s.resources.tech)} / ${b.product.mvpTechThreshold}`;
+      techEl.textContent = `${Math.floor(s.resources.tech)}`;
       techEl.className = 'value';
     }
 
@@ -267,7 +310,7 @@ export class Hud {
       this.btnMvp.innerHTML = 'MVP lancé ✓';
       this.btnMvp.disabled = true;
     } else {
-      this.btnMvp.innerHTML = `Lancer le MVP <span class="cost">${b.product.mvpTechThreshold} TECH</span>`;
+      this.btnMvp.innerHTML = 'Lancer le MVP';
       this.btnMvp.disabled = blocked || !canLaunchMvp(s, b);
     }
 
@@ -292,14 +335,14 @@ export class Hud {
       if (salaryTotal > 0) {
         const nextSal = Math.ceil(secondsToNextPayroll(s, b));
         if (nextSal <= nextPay) {
-          this.statusEl.textContent = `Paie dans ${nextSal}s (−${salaryTotal} $) · Clients dans ${nextPay}s (+${s.clients.length * b.revenue.cashPerPayment} $)`;
+          this.statusEl.textContent = `Paie dans ${nextSal}s (−${salaryTotal} $) · Clients dans ${nextPay}s (+${s.clients.length * s.mvpRevenuePerPayment} $)`;
           this.statusEl.style.color = salaryTotal > s.resources.cash ? 'var(--bad)' : 'var(--warn)';
         } else {
-          this.statusEl.textContent = `Prochain versement clients dans ${nextPay}s (+${s.clients.length * b.revenue.cashPerPayment} $)`;
+          this.statusEl.textContent = `Prochain versement clients dans ${nextPay}s (+${s.clients.length * s.mvpRevenuePerPayment} $)`;
           this.statusEl.style.color = 'var(--good)';
         }
       } else {
-        this.statusEl.textContent = `Prochain versement clients dans ${nextPay}s (+${s.clients.length * b.revenue.cashPerPayment} $)`;
+        this.statusEl.textContent = `Prochain versement clients dans ${nextPay}s (+${s.clients.length * s.mvpRevenuePerPayment} $)`;
         this.statusEl.style.color = 'var(--good)';
       }
     } else {

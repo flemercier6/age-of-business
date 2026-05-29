@@ -17,10 +17,11 @@ export interface GameState {
   office: Office;
   zones: Zone[];
   employees: Employee[];
-  /** Clients actifs (entités individuelles avec versements restants). */
   clients: Client[];
   resources: Resources;
   flags: Flags;
+  /** CASH reçu par client à chaque versement (défini au choix du MVP, 0 avant). */
+  mvpRevenuePerPayment: number;
   /** Progression fractionnaire vers le prochain client acquis (Sales). */
   clientAccrual: number;
   /** Temps écoulé dans le cycle de facturation courant (secondes). */
@@ -55,6 +56,7 @@ export function createInitialState(balance: Balance): GameState {
     clients: [],
     resources: { cash: balance.resources.startingCash, tech: 0, brand: 0 },
     flags: { mvpLaunched: false },
+    mvpRevenuePerPayment: 0,
     clientAccrual: 0,
     billingTimerSec: 0,
     payrollTimerSec: 0,
